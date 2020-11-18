@@ -85,11 +85,8 @@
       - easy
 
   - name: Compiling Hello world test ...
-    shell: mpicc {{ DEBUG_LOCATION }}/tutorials/mpi-hello-world/code/mpi_hello_world.c
+    shell: sudo mpicc {{ DEBUG_LOCATION }}/tutorials/mpi-hello-world/code/mpi_hello_world.c
     tags:
       - easy
 
-  - name: Running Hello world test ...
-    shell: mpirun {{ DEBUG_LOCATION }}/tutorials/mpi-hello-world/code/a.out
-    tags:
-      - easy
+  

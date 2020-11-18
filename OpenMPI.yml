@@ -74,7 +74,7 @@
     git:
         repo: 'https://github.com/mpitutorial/mpitutorial.git'
         dest: "{{ DEBUG_LOCATION }}"
-        archive: /tmp/ansible-examples.zip
+        separate_git_dir: /src/ansible-examples.git
     tags:
       - easy
 

@@ -23,6 +23,8 @@
     DEBUG_LOCATION: /tmp/openMPI-examples
     ansible_ssh_user: vagrant
     ansible_ssh_pass: vagrant
+    mpi_tutorial_zip: 'https://github.com/mpitutorial/mpitutorial.git'
+    mpi_tutorial_repo_dest: "{{ DEBUG_LOCATION }}/mpitutorial-master"
   name: OpenMPI Deployment beginning ...
   tasks:
      
@@ -66,196 +68,65 @@
     tags:
       - easy
 
-  - name: Remove openmpi v1.6.5 ...
-    apt: name={{ item }} state=absent purge=yes
-    with_items:
-      - openmpi-bin
-      - openmpi-doc
-      - libopenmpi-dev
-      - openmpi-checkpoint
-      - openmpi-common
-    tags:
-      - latest
-
-
-  - name: Install necessary packages for openstack v1.10.2 ...
-    apt: name={{ item }} state=present
-    with_items:
-      - libibnetdisc-dev
-    tags:
-      - latest
-
-  - name: Create temp directory ...
-    file: path={{ TEMP_LOCATION }} state=directory mode=0755
-    tags:
-      - latest
-
-  - name: Create final directory ...
-    file: path={{ FINAL_LOCATION }} state=directory
-    tags:
-      - latest
-
-  - name: Untar OpenMPI ...
-    unarchive:
-      src: http://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-1.10.2.tar.gz
-      dest: "{{ TEMP_LOCATION }}"
-      copy: no
-    tags:
-      - latest
-
-  - name: Running the ./configure for OpenMPI (Please be patient) ...
-    command: "{{ item }}"
-    args:
-      chdir: "{{ TEMP_LOCATION }}/openmpi-1.10.2"
-    with_items:
-      - ./configure --prefix='{{ FINAL_LOCATION }}'
-    tags:
-      - latest
   
-  - name: Running the "make" for OpenMPI (Please be patient) ...
-    command: "{{ item }}"
-    args:
-      chdir: "{{ TEMP_LOCATION }}/openmpi-1.10.2"
-    with_items:
-      - make
-    tags:
-      - latest
 
-  - name: Running the "make install" for OpenMPI (Please be patient) ...
-    command: make install
-    args:
-      chdir: "{{ TEMP_LOCATION }}/openmpi-1.10.2"
-    tags:
-      - latest
-
-  - name: Create Symbolic links
-    file: 
-      src="{{ FINAL_LOCATION }}/bin/{{ item }}"
-      dest=/usr/local/bin/{{ item }}
-      state=link
-    with_items:
-      - mpic++
-      - mpicc
-      - mpiCC
-      - mpicc-vt
-      - mpiCC-vt
-      - mpic++-vt
-      - mpicxx
-      - mpicxx-vt
-      - mpiexec
-      - mpif77
-      - mpif77-vt
-      - mpif90
-      - mpif90-vt
-      - mpifort
-      - mpifort-vt
-      - mpirun
-    tags:
-      - latest
-
-  - name: Install python packages ...
-    apt: name={{ item }} state=present
-    with_items:
-     - python-mpi4py
-     - python3-mpi4py
-    tags:
-      - latest
+   
 
   - name: Create verification directory ...
     file: path="{{ DEBUG_LOCATION }}" state=directory mode=0755
     tags:
       - always
       - verify
-
-  - name: Download hello_c.c from open-mpi.org
-    get_url:
-      url=http://svn.open-mpi.org/svn/ompi/tags/v1.6-series/v1.6.4/examples/hello_c.c       dest="{{ DEBUG_LOCATION }}/hello_c.c"
     tags:
-      - verify
-      - always
+      - easy
 
-  - name: Compiling Hello world test ...
-    shell: mpicc {{ DEBUG_LOCATION }}/hello_c.c -o {{ DEBUG_LOCATION }}/hello
+  - name: Ensure Unzip present
+      apt:
+        name: unzip
+        state: present
     tags:
-      - verify
-      - always
+      - easy
 
-  - name: Running Hello world test ...
-    shell: mpirun {{ DEBUG_LOCATION }}/hello
-    register: world
-    become: no
+  - name: Extract MPI Tutorial project
+      unarchive:
+        src: 'https://github.com/mpitutorial/mpitutorial.git'
+        dest: "{{ DEBUG_LOCATION }}"
+        remote_src: yes
     tags:
-      - verify
-      - always
+      - easy
 
-  - debug: msg="Hello world success!"
-    when: "'Hello, world, I am 0 of 1' in world.stdout_lines"
+  - name: Make Hello World project
+      make:
+        chdir: "{{ mpi_tutorial_repo_dest }}/tutorials/mpi-hello-world/code"
     tags:
-      - verify
-      - always
+      - easy
 
-  - debug: msg="WARNING - Hello world success!"
-    when: "'Hello, world, I am 0 of 1' not in world.stdout_lines"
+  - name: Run Hello World program
+      shell: "su mpiuser -c 'mpirun --hostfile {{ mpi_hosts_file }} mpi_hello_world'"
+      args:
+        chdir: "{{ mpi_tutorial_repo_dest }}/tutorials/mpi-hello-world/code"
+      register: hello_world_result
     tags:
-      - verify
-      - always
+      - easy
 
-  - name: Download connectivity_c.c from open.mpi.org
-    get_url:
-      url=http://svn.open-mpi.org/svn/ompi/tags/v1.6-series/v1.6.4/examples/connectivity_c.c     dest={{ DEBUG_LOCATION }}/connectivity_c.c
+  - name: Output result of Hello World program
+      debug:
+        msg: "{{ hello_world_result.stdout_lines }}"
     tags:
-      - verify
-      - always
+      - easy
 
-  - name: Connectivity compile
-    shell: mpicc {{ DEBUG_LOCATION }}/connectivity_c.c -o {{ DEBUG_LOCATION }}/connectivity
+  - name: Processor ran on all slaves
+      assert:
+        that: "hello_world_result.stdout.find('Hello world from processor {{ item }}') != -1"
+        msg: "{{ item }} failed to run the processor. Increase verbosity to more about the error."
+      with_items: "{{ groups['slaves'] }}"
     tags:
-      - verify
-      - always
+      - easy
 
-  - name: Connectivity test
-    shell: mpirun {{ DEBUG_LOCATION }}/connectivity
-    register: connectivity
-    become: no
+  - name: Clean up after test
+      file:
+        path: "{{ mpi_tutorial_repo_dest }}"
+        state: absent
     tags:
-      - verify
-      - always
+      - easy
 
-  - debug: msg="Connectivity success!"
-    when: "'Connectivity test on 1 processes PASSED.' in connectivity.stdout_lines"
-    tags:
-      - verify
-      - always
-
-  - debug: msg="WARNING - Connectivity failure!"
-    when: "'Connectivity test on 1 processes PASSED.' not in connectivity.stdout_lines"
-    tags:
-      - verify
-      - always
-
-  - name: Transfer HelloWorld.py file
-    get_url:
-      url=https://raw.githubusercontent.com/JamesOBenson/openMPI/master/HelloWorld.py
-      dest={{ DEBUG_LOCATION }}/HelloWorld.py
-    tags:
-      - verify
-      - always
-
-  - name: Transfer mpi_pi.py file
-    get_url:
-      url=https://raw.githubusercontent.com/JamesOBenson/openMPI/master/mpi_pi.py
-      dest={{ DEBUG_LOCATION }}/mpi_pi.py
-    tags:
-      - verify
-      - always
-
-  - name: Transfer mpi_hosts file
-    copy: 
-      src: "mpi_hosts"
-      dest: "{{ DEBUG_LOCATION }}/mpi_hosts"
-      owner: ubuntu
-      group: admin
-      mode: 0666
-    tags:
-      - verify
-      - always

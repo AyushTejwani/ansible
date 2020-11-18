@@ -21,7 +21,7 @@
     TEMP_LOCATION: /tmp/openmpi
     FINAL_LOCATION: /opt/openmpi-1.10.2
     DEBUG_LOCATION: /tmp/openMPI-examples
-    ansible_ssh_user: root
+    ansible_ssh_user: vagrant
     ansible_ssh_pass: vagrant
   name: OpenMPI Deployment beginning ...
   tasks:

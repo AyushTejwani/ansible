@@ -68,22 +68,16 @@
     tags:
       - easy
 
-  
-
-   
-
-  - name: Create verification directory ...
-    file: path="{{ DEBUG_LOCATION }}" state=directory mode=0755
-    tags:
-      - always
-      - verify
+  - name: Ensure Unzip present
+      apt: name= unzip state: present
     tags:
       - easy
 
-  - name: Ensure Unzip present
-      apt:
-        name: unzip
-        state: present
+  - name: Extract MPI Tutorial project
+      unarchive:
+        src: 'https://github.com/mpitutorial/mpitutorial.git'
+        dest: "{{ DEBUG_LOCATION }}"
+        remote_src: yes
     tags:
       - easy
 

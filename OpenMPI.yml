@@ -44,18 +44,6 @@
       - easy
       - latest
 
-  - name: Install python packages for MPI
-    pip: name={{ item }} state=present
-    with_items:
-      - numpy
-      - scipy
-      - matplotlib
-      - pandas
-      - nose
-      - pylint
-    tags:
-      - easy
-      - latest
 
   - name: Disable Strict Host Key Checking in SSH Config
     lineinfile: >

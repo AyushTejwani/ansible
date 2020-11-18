@@ -45,7 +45,7 @@
       - latest
 
   - name: Install python packages for MPI
-    pip: name= {{ item }} state=present
+    pip: name={{ item }} state=present
     with_items:
       - numpy
       - scipy

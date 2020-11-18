@@ -89,7 +89,7 @@
     tags:
       - easy
 
-  - name: Compiling Hello world test ...
-    shell: {{ DEBUG_LOCATION }}/tutorials/mpi-hello-world/code/a.out
+  - name: Running Hello world test ...
+    shell: mpirun {{ DEBUG_LOCATION }}/tutorials/mpi-hello-world/code/a.out
     tags:
       - easy

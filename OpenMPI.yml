@@ -27,7 +27,7 @@
     mpi_tutorial_repo_dest: "{{ DEBUG_LOCATION }}/mpitutorial-master"
   name: OpenMPI Deployment beginning ...
   tasks:
-     
+
   - name: Update ubuntu ...
     apt: update_cache=yes
     tags:
@@ -68,10 +68,6 @@
     tags:
       - easy
 
-  - name: Ensure Unzip present
-      apt: name= unzip state: present
-    tags:
-      - easy
 
   - name: Extract MPI Tutorial project
       unarchive:
